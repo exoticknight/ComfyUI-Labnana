@@ -16,7 +16,7 @@ Documentation = "https://labnana.com/docs/openapi/guide"
 
 [tool.comfy]
 DisplayName = "ComfyUI Labnana"
-PublisherId = ""
+PublisherId = "exoticknight"
 
 [tool.ruff.lint]
 # N999: the repo/module name "ComfyUI-Labnana" follows the ComfyUI custom-node
