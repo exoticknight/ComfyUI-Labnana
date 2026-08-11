@@ -13,10 +13,10 @@ ComfyUI custom nodes for the [Labnana](https://labnana.com) (Marswave) image gen
 
 ## Installation
 
-**Via ComfyUI-Manager** (recommended): open **Manager → Custom Nodes Manager → Install via Git URL** and paste:
+**Via ComfyUI-Manager** (recommended): open **Manager → Custom Nodes Manager**, search for **Labnana** and install. Also available on the [Comfy Registry](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana):
 
 ```
-https://github.com/exoticknight/ComfyUI-Labnana
+comfy node registry-install comfyui-labnana
 ```
 
 **Manual**:

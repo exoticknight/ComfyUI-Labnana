@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1 - 2026-08-11
+
+- Re-shot the four example-workflow thumbnails to match the 2.0 node layout.
+- README install section now points to the Comfy Registry (search "Labnana" in ComfyUI-Manager, or `comfy node registry-install comfyui-labnana`).
+- Reworded the package description in usage terms (shown on the registry page).
+
 ## 2.0.0 - 2026-08-11
 
 Usage-first repackaging: nodes are now organized around what you want to do, not around API endpoints.

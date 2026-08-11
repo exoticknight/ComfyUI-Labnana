@@ -13,10 +13,10 @@ Labnana(火星电波)图像生成 API 的 ComfyUI 自定义节点集。一个生
 
 ## 安装
 
-**通过 ComfyUI-Manager**(推荐):打开 **Manager → Custom Nodes Manager → Install via Git URL**,粘贴:
+**通过 ComfyUI-Manager**(推荐):打开 **Manager → Custom Nodes Manager**,搜索 **Labnana** 安装。也已上架 [Comfy Registry](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana):
 
 ```
-https://github.com/exoticknight/ComfyUI-Labnana
+comfy node registry-install comfyui-labnana
 ```
 
 **手动安装**:
