@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local secrets — never commit API keys
+.env
+*.local
