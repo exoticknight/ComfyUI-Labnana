@@ -96,6 +96,50 @@ def test_sync_response_parsing():
     print("OK  sync response parsing + no-image diagnostics")
 
 
+BUILTIN_NODES = {"Note", "SaveImage", "LoadImage", "PreviewImage"}
+CONNECTION_TYPES = {"LABNANA_CLIENT", "IMAGE", "MASK", "LATENT"}
+
+
+def _expected_widget_count(cls) -> int:
+    """Count widget slots the frontend serializes into widgets_values."""
+    n = 0
+    schema = cls.INPUT_TYPES()
+    for section in ("required", "optional"):
+        for spec in schema.get(section, {}).values():
+            kind, opts = spec[0], (spec[1] if len(spec) > 1 else {})
+            if isinstance(kind, list):
+                n += 1
+            elif kind in ("STRING", "INT", "FLOAT", "BOOLEAN"):
+                n += 1
+                if opts.get("control_after_generate"):
+                    n += 1  # extra "fixed/randomize/..." widget
+    return n
+
+
+def test_example_workflows():
+    import json
+    wf_dir = ROOT / "example_workflows"
+    files = sorted(wf_dir.glob("*.json"))
+    assert files, "no example workflows found"
+    mappings = pkg.NODE_CLASS_MAPPINGS
+    for f in files:
+        wf = json.loads(f.read_text(encoding="utf-8"))
+        node_ids = {n["id"] for n in wf["nodes"]}
+        for n in wf["nodes"]:
+            t = n["type"]
+            assert t in mappings or t in BUILTIN_NODES, f"{f.name}: {t}"
+            if t in mappings:
+                want = _expected_widget_count(mappings[t])
+                got = len(n.get("widgets_values", []))
+                assert got == want, (f"{f.name}: {t} has {got} widget values, "
+                                     f"node defines {want}")
+        for link_id, src, _s, dst, _d, ltype in wf.get("links", []):
+            assert src in node_ids and dst in node_ids, f"{f.name}: link {link_id}"
+            assert ltype in CONNECTION_TYPES.union({"STRING", "INT"}), ltype
+        assert f.with_suffix(".jpg").exists(), f"{f.name}: missing thumbnail"
+        print(f"OK  workflow {f.name}")
+
+
 def test_client():
     saved = os.environ.pop("LABNANA_API_KEY", None)
     try:
@@ -117,5 +161,6 @@ if __name__ == "__main__":
     test_payload_building()
     test_validation()
     test_sync_response_parsing()
+    test_example_workflows()
     test_client()
     print("\nALL CHECKS PASSED")

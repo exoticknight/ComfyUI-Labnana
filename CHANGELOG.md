@@ -14,3 +14,4 @@ Initial release.
 - Reference images as inline base64 (auto-downscale/JPEG fallback to fit the 20 MB body limit) and/or `https://`/`gs://` URLs.
 - Automatic retry with 20–30 s exponential backoff on rate limiting (code 29998 / HTTP 429).
 - API key via node field or `LABNANA_API_KEY` environment variable.
+- 4 example workflows with thumbnails in `example_workflows/`, shown in ComfyUI's template browser (text-to-image, image editing, async 4K, account & costs).

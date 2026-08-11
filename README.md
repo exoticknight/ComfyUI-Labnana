@@ -65,6 +65,15 @@ Two inputs, freely combined, subject to the per-model cap:
 
 All four generation-payload nodes accept an optional `system_prompt`. The API has no native system-prompt field, so it is prepended to the prompt (blank-line separated) — handy for sharing one style/behavior preamble across workflows.
 
+## Example workflows
+
+Ready-made workflows ship in [example_workflows/](example_workflows) and appear in ComfyUI under **Workflow → Browse Templates → ComfyUI-Labnana** (you can also drag the JSON files onto the canvas):
+
+- **Text to Image** — minimal synchronous generation
+- **Image Editing** — reference image + `system_prompt` guardrails
+- **Async 4K Generation** — submit / poll / download for slow jobs
+- **Account & Costs** — balance, credit estimate and task history before spending credits
+
 ## Typical wiring
 
 - **Text-to-image**: `Labnana API Client` → `Labnana Image Generation` → `Save Image`.

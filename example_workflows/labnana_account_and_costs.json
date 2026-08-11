@@ -1,0 +1,112 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [40, -100],
+      "size": [520, 130],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {},
+      "widgets_values": [
+        "Labnana account, cost estimation and task history\n\nRun this before spending credits:\n- Subscription Info shows your credit balances,\n- Estimate Credits tells you the cost and whether the request can run,\n- List Tasks shows your recent generation history.\n\nDetails are printed to the ComfyUI console/log."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LabnanaClient",
+      "pos": [40, 100],
+      "size": [360, 150],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "client", "type": "LABNANA_CLIENT", "links": [1, 2, 3]}
+      ],
+      "properties": {"Node name for S&R": "LabnanaClient"},
+      "widgets_values": ["", "https://api.labnana.com", 300, 3]
+    },
+    {
+      "id": 3,
+      "type": "LabnanaSubscription",
+      "pos": [480, 60],
+      "size": [340, 140],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "client", "type": "LABNANA_CLIENT", "link": 1}
+      ],
+      "outputs": [
+        {"name": "total_credits", "type": "INT", "links": null},
+        {"name": "monthly_credits", "type": "INT", "links": null},
+        {"name": "permanent_credits", "type": "INT", "links": null},
+        {"name": "paid_status", "type": "BOOLEAN", "links": null},
+        {"name": "info_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "LabnanaSubscription"},
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "LabnanaEstimateCredits",
+      "pos": [480, 260],
+      "size": [400, 360],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "client", "type": "LABNANA_CLIENT", "link": 2},
+        {"name": "reference_images", "type": "IMAGE", "link": null}
+      ],
+      "outputs": [
+        {"name": "credits", "type": "INT", "links": null},
+        {"name": "can_generate", "type": "BOOLEAN", "links": null},
+        {"name": "info_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "LabnanaEstimateCredits"},
+      "widgets_values": [
+        "Ultra-detailed aerial view of a futuristic city at sunrise.",
+        "gemini-3-pro-image",
+        "4K",
+        "21:9",
+        "",
+        ""
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LabnanaListTasks",
+      "pos": [940, 60],
+      "size": [340, 160],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "client", "type": "LABNANA_CLIENT", "link": 3}
+      ],
+      "outputs": [
+        {"name": "tasks_json", "type": "STRING", "links": null},
+        {"name": "latest_task_id", "type": "STRING", "links": null},
+        {"name": "total", "type": "INT", "links": null}
+      ],
+      "properties": {"Node name for S&R": "LabnanaListTasks"},
+      "widgets_values": [1, 20, "all"]
+    }
+  ],
+  "links": [
+    [1, 2, 0, 3, 0, "LABNANA_CLIENT"],
+    [2, 2, 0, 4, 0, "LABNANA_CLIENT"],
+    [3, 2, 0, 5, 0, "LABNANA_CLIENT"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

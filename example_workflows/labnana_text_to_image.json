@@ -1,0 +1,86 @@
+{
+  "last_node_id": 4,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [40, -80],
+      "size": [500, 130],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {},
+      "widgets_values": [
+        "Labnana text-to-image (synchronous)\n\n1. Put your API key (ls_...) into the Labnana API Client node, or leave it empty and set the LABNANA_API_KEY environment variable.\n2. Edit the prompt and press Run.\n\nKeys: https://labnana.com/api-keys"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LabnanaClient",
+      "pos": [40, 120],
+      "size": [360, 150],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "client", "type": "LABNANA_CLIENT", "links": [1]}
+      ],
+      "properties": {"Node name for S&R": "LabnanaClient"},
+      "widgets_values": ["", "https://api.labnana.com", 300, 3]
+    },
+    {
+      "id": 3,
+      "type": "LabnanaImageGeneration",
+      "pos": [460, 120],
+      "size": [420, 420],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "client", "type": "LABNANA_CLIENT", "link": 1},
+        {"name": "reference_images", "type": "IMAGE", "link": null}
+      ],
+      "outputs": [
+        {"name": "images", "type": "IMAGE", "links": [2]},
+        {"name": "response_text", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "LabnanaImageGeneration"},
+      "widgets_values": [
+        "A cozy ramen shop on a rainy Tokyo night, neon signs reflecting in puddles, cinematic lighting, photorealistic.",
+        "gemini-3.1-flash-image",
+        "2K",
+        "1:1",
+        0,
+        "randomize",
+        "",
+        ""
+      ]
+    },
+    {
+      "id": 4,
+      "type": "SaveImage",
+      "pos": [940, 120],
+      "size": [340, 380],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 2}
+      ],
+      "properties": {},
+      "widgets_values": ["labnana"]
+    }
+  ],
+  "links": [
+    [1, 2, 0, 3, 0, "LABNANA_CLIENT"],
+    [2, 3, 0, 4, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

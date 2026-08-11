@@ -61,6 +61,15 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 - `reference_images`(IMAGE 输入):ComfyUI 图像批次,自动编码为 base64 内联上传(过大自动缩到 3072px 内 / 转 JPEG,规避 20MB 请求体上限);
 - `reference_image_urls`(文本):每行一个 `https://` 或 `gs://` URL,以 fileData 方式引用。
 
+## 示例工作流
+
+[example_workflows/](example_workflows) 内置四个开箱即用的工作流,会出现在 ComfyUI 的 **Workflow → Browse Templates → ComfyUI-Labnana** 模板浏览器中(也可直接把 JSON 拖到画布上):
+
+- **Text to Image** — 最简同步生图
+- **Image Editing** — 参考图 + `system_prompt` 风格约束
+- **Async 4K Generation** — 提交/轮询/下载,适合 4K 慢任务
+- **Account & Costs** — 生成前查余额、预估积分、看任务历史
+
 ## 典型接法
 
 **文生图**:`Labnana API Client` → `Labnana Image Generation`(填 prompt,选 model/size/ratio)→ `Save Image`。
