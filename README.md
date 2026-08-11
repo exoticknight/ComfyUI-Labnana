@@ -1,6 +1,8 @@
 # ComfyUI-Labnana
 
 [![CI](https://github.com/exoticknight/ComfyUI-Labnana/actions/workflows/ci.yml/badge.svg)](https://github.com/exoticknight/ComfyUI-Labnana/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/exoticknight/ComfyUI-Labnana)](https://github.com/exoticknight/ComfyUI-Labnana/releases)
+[![Comfy Registry](https://img.shields.io/badge/Comfy_Registry-comfyui--labnana-1a56db)](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana)
 [![License](https://img.shields.io/github/license/exoticknight/ComfyUI-Labnana)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
 
