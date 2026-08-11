@@ -6,8 +6,8 @@ and exposes one method per endpoint.
 """
 
 import os
-import time
 import random
+import time
 
 import requests
 

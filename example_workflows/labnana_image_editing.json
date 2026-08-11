@@ -62,7 +62,8 @@
       ],
       "outputs": [
         {"name": "images", "type": "IMAGE", "links": [3]},
-        {"name": "response_text", "type": "STRING", "links": null}
+        {"name": "image_urls", "type": "STRING", "links": null},
+        {"name": "task_id", "type": "STRING", "links": null}
       ],
       "properties": {"Node name for S&R": "LabnanaImageGeneration"},
       "widgets_values": [
@@ -73,7 +74,8 @@
         0,
         "randomize",
         "You are a precise photo editor. Preserve the subject's identity, pose and lighting; only change what is explicitly requested.",
-        ""
+        "",
+        600.0
       ]
     },
     {

@@ -12,7 +12,7 @@
       "mode": 0,
       "properties": {},
       "widgets_values": [
-        "Labnana text-to-image (synchronous)\n\n1. Put your API key (ls_...) into the Labnana API Client node, or leave it empty and set the LABNANA_API_KEY environment variable.\n2. Edit the prompt and press Run.\n\nKeys: https://labnana.com/api-keys"
+        "Labnana text-to-image\n\n1. Put your API key (ls_...) into the Labnana API Client node, or leave it empty and set the LABNANA_API_KEY environment variable.\n2. Edit the prompt and press Run.\n\nKeys: https://labnana.com/api-keys"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -46,7 +46,8 @@
       ],
       "outputs": [
         {"name": "images", "type": "IMAGE", "links": [2]},
-        {"name": "response_text", "type": "STRING", "links": null}
+        {"name": "image_urls", "type": "STRING", "links": null},
+        {"name": "task_id", "type": "STRING", "links": null}
       ],
       "properties": {"Node name for S&R": "LabnanaImageGeneration"},
       "widgets_values": [
@@ -57,7 +58,8 @@
         0,
         "randomize",
         "",
-        ""
+        "",
+        600.0
       ]
     },
     {

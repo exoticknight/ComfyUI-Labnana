@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.0.0 - 2026-08-11
+
+Usage-first repackaging: nodes are now organized around what you want to do, not around API endpoints.
+
+**Breaking changes**
+
+- `Labnana Image Generation` is now the single generation node: it submits an async task, polls and downloads internally (new optional `timeout` input, new outputs `images` / `image_urls` / `task_id`).
+- `Labnana Image Generation (Async)` removed — its behavior is what the main node does now. Workflows using it: swap in `Labnana Image Generation`.
+- `Labnana Submit Task` / `Get Task` / `List Tasks` moved from the `Labnana/Tasks` category to `Labnana/Advanced`.
+
+**Other**
+
+- Node descriptions rewritten in user terms; the node → endpoint mapping lives in a README appendix.
+- README restructured by task (quick start / editing / 4K / cost control / advanced); example workflow `labnana_async_4k` renamed to `labnana_4k`.
+- Added a GitHub Action for publishing to the Comfy Registry on `pyproject.toml` changes.
+
 ## 1.0.0 - 2026-08-11
 
 Initial release.

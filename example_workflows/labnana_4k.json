@@ -12,7 +12,7 @@
       "mode": 0,
       "properties": {},
       "widgets_values": [
-        "Labnana async generation (recommended for 4K / slow jobs)\n\nThe async node submits a task, polls until it finishes and downloads the result URLs. More robust than the synchronous node for large images: no long-held HTTP connection.\n\nThe image_urls output also gives you the public result URLs (valid 7 days)."
+        "Labnana 4K generation\n\nThe generation node handles submission, waiting and download internally, so 4K works exactly like any other size — just pick 4K. Raise the optional timeout if a job needs longer than 10 minutes.\n\nThe image_urls output also gives you the public result URLs (valid 7 days)."
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -34,7 +34,7 @@
     },
     {
       "id": 3,
-      "type": "LabnanaImageGenerationAsync",
+      "type": "LabnanaImageGeneration",
       "pos": [460, 100],
       "size": [420, 460],
       "flags": {},
@@ -49,7 +49,7 @@
         {"name": "image_urls", "type": "STRING", "links": null},
         {"name": "task_id", "type": "STRING", "links": null}
       ],
-      "properties": {"Node name for S&R": "LabnanaImageGenerationAsync"},
+      "properties": {"Node name for S&R": "LabnanaImageGeneration"},
       "widgets_values": [
         "Ultra-detailed aerial view of a futuristic solarpunk city at sunrise, lush rooftop gardens, glass towers, volumetric light.",
         "gemini-3-pro-image",
@@ -57,10 +57,9 @@
         "16:9",
         0,
         "randomize",
-        5.0,
-        600.0,
         "",
-        ""
+        "",
+        900.0
       ]
     },
     {

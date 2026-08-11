@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-labnana"
 description = "ComfyUI custom nodes for the Labnana (Marswave) image generation OpenAPI: sync/async generation, task management, credit estimation and subscription info."
-version = "1.0.0"
+version = "2.0.0"
 license = { file = "LICENSE" }
 authors = [{ name = "exoticknight" }]
 readme = "README.md"
@@ -17,3 +17,8 @@ Documentation = "https://labnana.com/docs/openapi/guide"
 [tool.comfy]
 DisplayName = "ComfyUI Labnana"
 PublisherId = ""
+
+[tool.ruff.lint]
+# N999: the repo/module name "ComfyUI-Labnana" follows the ComfyUI custom-node
+# naming convention; it is imported by path, never as a normal module name.
+ignore = ["N999"]

@@ -1,13 +1,25 @@
 # ComfyUI-Labnana
 
+[![CI](https://github.com/exoticknight/ComfyUI-Labnana/actions/workflows/ci.yml/badge.svg)](https://github.com/exoticknight/ComfyUI-Labnana/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/exoticknight/ComfyUI-Labnana)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
+
 [中文文档](README.zh-CN.md) | English
 
-ComfyUI custom nodes for the [Labnana](https://labnana.com) (Marswave) image generation OpenAPI. Full coverage of the official API surface: synchronous generation, async tasks (submit / poll / history), credit estimation and subscription info.
+ComfyUI custom nodes for the [Labnana](https://labnana.com) (Marswave) image generation API. One generation node covers text-to-image, image editing and 4K output — submission, waiting and download all happen inside the node. Cost-control and task-history tools included.
 
 - Integration guide: <https://labnana.com/docs/openapi/guide>
 - Full API reference: <https://docs.marswave.ai/openapi-labnana.html>
 
 ## Installation
+
+**Via ComfyUI-Manager** (recommended): open **Manager → Custom Nodes Manager → Install via Git URL** and paste:
+
+```
+https://github.com/exoticknight/ComfyUI-Labnana
+```
+
+**Manual**:
 
 ```
 cd ComfyUI/custom_nodes
@@ -23,23 +35,34 @@ Create a key (starts with `ls_`) at <https://labnana.com/api-keys>, then either:
 1. paste it into the `api_key` field of the **Labnana API Client** node, or
 2. set the `LABNANA_API_KEY` environment variable and leave the field empty — recommended, so the key never leaks into shared workflow JSON files.
 
-## Nodes
+## Quick start: text to image
 
-| Node | Category | Endpoint | Purpose |
-|---|---|---|---|
-| Labnana API Client | Account | — | Configure key/timeout/retries; outputs a reusable `client` |
-| Labnana Subscription Info | Account | `GET /user/subscription` | Credit balances and plan status |
-| Labnana Image Generation | Generate | `POST /images/generation` | Synchronous, image returned directly (base64) |
-| Labnana Image Generation (Async) | Generate | `POST /images/generation/async` + polling | Auto-polls and downloads result URLs; robust for 4K/slow jobs |
-| Labnana Estimate Credits | Generate | `POST /images/generation/estimate-credits` | Cost and feasibility check before generating |
-| Labnana Submit Task | Tasks | `POST /images/generation/async` | Submit only, returns taskId immediately |
-| Labnana Get Task | Tasks | `GET /images/generation/tasks/{taskId}` | Fetch/wait for a task and download its images |
-| Labnana List Tasks | Tasks | `GET /images/generation/tasks` | Paged task history with status filter |
-| Labnana Load Image From URL | Helpers | — | Load result URLs (or any image URL) as an IMAGE batch |
+`Labnana API Client` → `Labnana Image Generation` → `Save Image`. Type a prompt, pick a `model`, `image_size` and `aspect_ratio`, press Run. The node handles everything else internally.
+
+- The `provider` is derived from the model automatically.
+- `image_urls` also outputs the public result URLs (valid 7 days).
+- The `seed` widget is never sent to the API — it only forces ComfyUI to re-execute the node instead of serving the cached result. Set it to *randomize* to regenerate every run.
+
+## Editing images (img2img)
+
+Connect a `Load Image` node to `reference_images` and write the editing instructions in the prompt. Reference images can come from two inputs, freely combined, subject to the per-model cap (4–14):
+
+- `reference_images` (IMAGE): a ComfyUI image batch, uploaded inline as base64 (auto-downscaled to ≤3072 px / JPEG fallback to stay under the 20 MB body limit);
+- `reference_image_urls` (STRING): one `https://` or `gs://` URL per line.
+
+**Style presets**: every generation node accepts an optional `system_prompt`, prepended to the prompt (the API has no native system-prompt field) — handy for sharing one style/behavior preamble across workflows.
+
+## 4K and slow jobs
+
+Nothing special to wire — pick `4K` as the image size. If a job needs longer than the default 10-minute wait, raise the node's optional `timeout` input.
+
+## Controlling costs
+
+- **Labnana Estimate Credits** takes the same inputs as the generation node and returns `credits` and `can_generate` — check the price before spending.
+- **Labnana Subscription Info** shows your credit balances and plan status.
+- Invalid combinations (e.g. 4K on wan2.7-image, too many reference images) fail fast locally before any credits are spent.
 
 ## Models and constraints
-
-You only pick a `model`; the `provider` is derived automatically:
 
 | Model | Provider | Sizes | Max ref images | Credits (1K/2K/4K) |
 |---|---|---|---|---|
@@ -52,36 +75,28 @@ You only pick a `model`; the `provider` is derived automatically:
 
 Aspect ratios: `1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1`.
 
-Invalid combinations (e.g. 4K on wan2.7-image, too many reference images) fail fast locally before any credits are spent.
+Credit prices follow the [official docs](https://docs.marswave.ai/openapi-labnana.html) and may change — the **Estimate Credits** node always returns the live cost.
 
-## Reference images (img2img / editing)
+## Advanced: task management
 
-Two inputs, freely combined, subject to the per-model cap:
+For batch pipelines and fire-and-forget jobs, the async task API is exposed under **Labnana/Advanced**:
 
-- `reference_images` (IMAGE): a ComfyUI image batch, uploaded inline as base64 (auto-downscaled to ≤3072 px / JPEG fallback to stay under the 20 MB body limit);
-- `reference_image_urls` (STRING): one `https://` or `gs://` URL per line, sent as fileData references.
+- **Labnana Submit Task** — submit only, returns a `task_id` immediately without waiting;
+- **Labnana Get Task** — fetch (or wait for) a task by `task_id` any time later and download its images;
+- **Labnana List Tasks** — paged generation history with status filter;
+- **Labnana Load Image From URL** — turn result URLs (or any image URL) back into an IMAGE batch.
 
-## System prompt
-
-All four generation-payload nodes accept an optional `system_prompt`. The API has no native system-prompt field, so it is prepended to the prompt (blank-line separated) — handy for sharing one style/behavior preamble across workflows.
+For normal use you never need these — `Labnana Image Generation` does submit + wait + download in one node.
 
 ## Example workflows
 
 Ready-made workflows ship in [example_workflows/](example_workflows) and appear in ComfyUI under **Workflow → Browse Templates → ComfyUI-Labnana** (you can also drag the JSON files onto the canvas):
 
-- **Text to Image** — minimal synchronous generation
-- **Image Editing** — reference image + `system_prompt` guardrails
-- **Async 4K Generation** — submit / poll / download for slow jobs
-- **Account & Costs** — balance, credit estimate and task history before spending credits
-
-## Typical wiring
-
-- **Text-to-image**: `Labnana API Client` → `Labnana Image Generation` → `Save Image`.
-- **Editing**: same, with `Load Image` connected to `reference_images` and editing instructions in the prompt.
-- **Long-running jobs**: `Labnana Submit Task` → keep the `task_id` → fetch later with `Labnana Get Task` (or use the one-step Async node).
-- **Cost control**: check `credits` / `can_generate` from `Labnana Estimate Credits` first.
-
-The `seed` widget is never sent to the API — it only forces ComfyUI to re-execute the node instead of serving the cached result. Set it to *randomize* to regenerate every run.
+| ![Text to Image](example_workflows/labnana_text_to_image.jpg) | ![Image Editing](example_workflows/labnana_image_editing.jpg) |
+|:---:|:---:|
+| **Text to Image** — minimal generation | **Image Editing** — reference image + `system_prompt` guardrails |
+| ![4K Generation](example_workflows/labnana_4k.jpg) | ![Account & Costs](example_workflows/labnana_account_and_costs.jpg) |
+| **4K Generation** — high-res with a longer timeout | **Account & Costs** — balance, credit estimate and task history before spending credits |
 
 ## Error handling
 
@@ -101,6 +116,22 @@ Offline tests (no API key or network needed, requires torch/Pillow/numpy):
 ```
 python tests/test_offline.py
 ```
+
+<details>
+<summary><b>Node → API endpoint mapping</b></summary>
+
+| Node | Endpoint |
+|---|---|
+| Labnana Subscription Info | `GET /openapi/v1/user/subscription` |
+| Labnana Image Generation | `POST /openapi/v1/images/generation/async` + `GET .../tasks/{taskId}` polling |
+| Labnana Estimate Credits | `POST /openapi/v1/images/generation/estimate-credits` |
+| Labnana Submit Task | `POST /openapi/v1/images/generation/async` |
+| Labnana Get Task | `GET /openapi/v1/images/generation/tasks/{taskId}` |
+| Labnana List Tasks | `GET /openapi/v1/images/generation/tasks` |
+
+The synchronous endpoint (`POST /openapi/v1/images/generation`) is implemented in the bundled `labnana_api` client library but not exposed as a node — the async flow is more robust for every size.
+
+</details>
 
 ## License
 

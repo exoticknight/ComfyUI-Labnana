@@ -2,21 +2,28 @@
 
 Nodes:
   Account   : Labnana API Client, Labnana Subscription
-  Generate  : Labnana Image Generation (sync),
-              Labnana Image Generation (Async) (submit + wait + download),
+  Generate  : Labnana Image Generation (submit + wait + download in one node),
               Labnana Estimate Credits
-  Tasks     : Labnana Submit Task, Labnana Get Task, Labnana List Tasks
+  Advanced  : Labnana Submit Task, Labnana Get Task, Labnana List Tasks
   Helpers   : Labnana Load Image From URL
 """
 
 import json
 
 from .labnana_api import (
-    LabnanaClient, LabnanaError, DEFAULT_BASE_URL, API_KEY_ENV,
-    MODEL_NAMES, ASPECT_RATIOS, IMAGE_SIZES, TASK_STATUSES,
+    API_KEY_ENV,
+    ASPECT_RATIOS,
+    DEFAULT_BASE_URL,
+    IMAGE_SIZES,
+    MODEL_NAMES,
+    TASK_STATUSES,
+    LabnanaClient,
+    LabnanaError,
 )
 from .labnana_api.imaging import (
-    build_payload, parse_sync_response, pils_to_image_batch, bytes_to_pil,
+    build_payload,
+    bytes_to_pil,
+    pils_to_image_batch,
 )
 
 CATEGORY_ROOT = "Labnana"
@@ -109,7 +116,7 @@ class LabnanaSubscriptionNode:
     FUNCTION = "query"
     CATEGORY = f"{CATEGORY_ROOT}/Account"
     OUTPUT_NODE = True
-    DESCRIPTION = "GET /openapi/v1/user/subscription — credit balances and plan."
+    DESCRIPTION = "Check your credit balance and plan before spending credits."
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
@@ -132,76 +139,54 @@ class LabnanaSubscriptionNode:
 
 
 class LabnanaImageGenerationNode:
-    """Synchronous generation: request -> base64 image(s) in the response."""
+    """The one generation node: text-to-image and editing. Submits an async
+    task, polls until done and downloads the results — no task plumbing."""
+
+    # Fixed polling cadence per the official rate-limit guidance; workflows
+    # only ever need to tune how long they are willing to wait.
+    POLL_INTERVAL = 5.0
 
     @classmethod
     def INPUT_TYPES(cls):
-        return _generation_inputs(extra_required={
-            "seed": ("INT", {
-                "default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF,
-                "control_after_generate": True,
-                "tooltip": "Not sent to the API — changes force ComfyUI to "
-                           "re-run the node instead of using the cached "
-                           "result."}),
-        })
-
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("images", "response_text")
-    FUNCTION = "generate"
-    CATEGORY = f"{CATEGORY_ROOT}/Generate"
-    DESCRIPTION = ("POST /openapi/v1/images/generation — synchronous, returns "
-                   "the image directly (base64). Best for interactive use.")
-
-    def generate(self, client, prompt, model, image_size, aspect_ratio, seed,
-                 system_prompt="", reference_images=None,
-                 reference_image_urls=""):
-        payload = build_payload(model, prompt, image_size, aspect_ratio,
-                                reference_images, reference_image_urls,
-                                system_prompt)
-        resp = client.generate(payload)
-        pils, text = parse_sync_response(resp)
-        return (pils_to_image_batch(pils), text)
-
-
-class LabnanaImageGenerationAsyncNode:
-    """Submit an async task, poll until done, download the result URLs."""
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return _generation_inputs(extra_required={
-            "seed": ("INT", {
-                "default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF,
-                "control_after_generate": True,
-                "tooltip": "Not sent to the API — cache-busting only."}),
-            "poll_interval": ("FLOAT", {"default": 5.0, "min": 1.0,
-                                        "max": 60.0, "step": 0.5}),
-            "timeout": ("FLOAT", {"default": 600.0, "min": 30.0,
-                                  "max": 3600.0, "step": 10.0,
-                                  "tooltip": "Max seconds to wait for the "
-                                             "task to finish."}),
-        })
+        return _generation_inputs(
+            extra_required={
+                "seed": ("INT", {
+                    "default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF,
+                    "control_after_generate": True,
+                    "tooltip": "Not sent to the API — changes force ComfyUI "
+                               "to re-run the node instead of using the "
+                               "cached result."}),
+            },
+            extra_optional={
+                "timeout": ("FLOAT", {
+                    "default": 600.0, "min": 30.0, "max": 3600.0,
+                    "step": 10.0,
+                    "tooltip": "Max seconds to wait for the result "
+                               "(4K jobs can be slow)."}),
+            })
 
     RETURN_TYPES = ("IMAGE", "STRING", "STRING")
     RETURN_NAMES = ("images", "image_urls", "task_id")
     FUNCTION = "generate"
     CATEGORY = f"{CATEGORY_ROOT}/Generate"
-    DESCRIPTION = ("POST /openapi/v1/images/generation/async + polling — "
-                   "returns public image URLs; more robust for 4K/slow jobs.")
+    DESCRIPTION = ("Generate or edit images from a prompt (plus optional "
+                   "reference images). Handles submission, waiting and "
+                   "download internally; works for all sizes including 4K.")
 
     def generate(self, client, prompt, model, image_size, aspect_ratio, seed,
-                 poll_interval, timeout, system_prompt="",
-                 reference_images=None, reference_image_urls=""):
+                 system_prompt="", reference_images=None,
+                 reference_image_urls="", timeout=600.0):
         payload = build_payload(model, prompt, image_size, aspect_ratio,
                                 reference_images, reference_image_urls,
                                 system_prompt)
         submitted = client.generate_async(payload)
         task_id = submitted.get("taskId", "")
-        print(f"[Labnana] async task submitted: {task_id}")
+        print(f"[Labnana] task submitted: {task_id}")
 
         def progress(status, _task):
             print(f"[Labnana] task {task_id}: {status}")
 
-        task = client.wait_for_task(task_id, poll_interval=poll_interval,
+        task = client.wait_for_task(task_id, poll_interval=self.POLL_INTERVAL,
                                     timeout=timeout, progress_cb=progress)
         images = task.get("images") or []
         if not images:
@@ -223,8 +208,8 @@ class LabnanaEstimateCreditsNode:
     FUNCTION = "estimate"
     CATEGORY = f"{CATEGORY_ROOT}/Generate"
     OUTPUT_NODE = True
-    DESCRIPTION = ("POST /openapi/v1/images/generation/estimate-credits — "
-                   "cost and feasibility without generating.")
+    DESCRIPTION = ("Preview the credit cost and feasibility of a generation "
+                   "before actually running it.")
 
     def estimate(self, client, prompt, model, image_size, aspect_ratio,
                  system_prompt="", reference_images=None,
@@ -260,10 +245,12 @@ class LabnanaSubmitTaskNode:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("task_id", "status")
     FUNCTION = "submit"
-    CATEGORY = f"{CATEGORY_ROOT}/Tasks"
+    CATEGORY = f"{CATEGORY_ROOT}/Advanced"
     OUTPUT_NODE = True
-    DESCRIPTION = ("POST /openapi/v1/images/generation/async — submit only, "
-                   "returns immediately with a taskId.")
+    DESCRIPTION = ("Advanced: fire-and-forget submission. Returns a task_id "
+                   "immediately without waiting — fetch the images later "
+                   "with 'Labnana Get Task'. For normal use, "
+                   "'Labnana Image Generation' does all of this in one node.")
 
     def submit(self, client, prompt, model, image_size, aspect_ratio, seed,
                system_prompt="", reference_images=None,
@@ -298,9 +285,9 @@ class LabnanaGetTaskNode:
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "status", "image_urls", "info_json")
     FUNCTION = "fetch"
-    CATEGORY = f"{CATEGORY_ROOT}/Tasks"
-    DESCRIPTION = ("GET /openapi/v1/images/generation/tasks/{taskId} — poll a "
-                   "task and download its images once successful.")
+    CATEGORY = f"{CATEGORY_ROOT}/Advanced"
+    DESCRIPTION = ("Advanced: fetch (or wait for) a previously submitted "
+                   "task by its task_id and download its images.")
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
@@ -348,9 +335,10 @@ class LabnanaListTasksNode:
     RETURN_TYPES = ("STRING", "STRING", "INT")
     RETURN_NAMES = ("tasks_json", "latest_task_id", "total")
     FUNCTION = "list_tasks"
-    CATEGORY = f"{CATEGORY_ROOT}/Tasks"
+    CATEGORY = f"{CATEGORY_ROOT}/Advanced"
     OUTPUT_NODE = True
-    DESCRIPTION = "GET /openapi/v1/images/generation/tasks — paged task history."
+    DESCRIPTION = ("Advanced: browse your generation history (paged, "
+                   "filterable by status).")
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
@@ -406,7 +394,6 @@ NODE_CLASS_MAPPINGS = {
     "LabnanaClient": LabnanaClientNode,
     "LabnanaSubscription": LabnanaSubscriptionNode,
     "LabnanaImageGeneration": LabnanaImageGenerationNode,
-    "LabnanaImageGenerationAsync": LabnanaImageGenerationAsyncNode,
     "LabnanaEstimateCredits": LabnanaEstimateCreditsNode,
     "LabnanaSubmitTask": LabnanaSubmitTaskNode,
     "LabnanaGetTask": LabnanaGetTaskNode,
@@ -418,7 +405,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LabnanaClient": "Labnana API Client",
     "LabnanaSubscription": "Labnana Subscription Info",
     "LabnanaImageGeneration": "Labnana Image Generation",
-    "LabnanaImageGenerationAsync": "Labnana Image Generation (Async)",
     "LabnanaEstimateCredits": "Labnana Estimate Credits",
     "LabnanaSubmitTask": "Labnana Submit Task",
     "LabnanaGetTask": "Labnana Get Task",

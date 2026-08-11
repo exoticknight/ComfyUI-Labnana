@@ -18,8 +18,8 @@ imaging = importlib.import_module(f"{ROOT.name}.labnana_api.imaging")
 models = importlib.import_module(f"{ROOT.name}.labnana_api.models")
 client_mod = importlib.import_module(f"{ROOT.name}.labnana_api.client")
 
-import torch  # noqa: E402  (after sys.path setup on purpose)
-from PIL import Image  # noqa: E402
+import torch
+from PIL import Image
 
 
 def test_node_schemas():
@@ -31,10 +31,10 @@ def test_node_schemas():
         assert "required" in schema, name
         assert isinstance(cls.RETURN_TYPES, tuple), name
         assert len(cls.RETURN_TYPES) == len(cls.RETURN_NAMES), name
-        assert hasattr(cls, getattr(cls, "FUNCTION")), name
+        assert hasattr(cls, cls.FUNCTION), name
         print(f"OK  {name:32s} -> {display[name]}")
 
-    for key in ("LabnanaImageGeneration", "LabnanaImageGenerationAsync",
+    for key in ("LabnanaImageGeneration",
                 "LabnanaEstimateCredits", "LabnanaSubmitTask"):
         assert "system_prompt" in mappings[key].INPUT_TYPES()["optional"], key
     print("OK  system_prompt input present on generation nodes")
