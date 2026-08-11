@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.2 - 2026-08-11
+
+- Added the Labnana logo as the Comfy Registry icon (`assets/icon.png`).
+
 ## 2.0.1 - 2026-08-11
 
 - Re-shot the four example-workflow thumbnails to match the 2.0 node layout.

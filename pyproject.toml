@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-labnana"
 description = "ComfyUI custom nodes for the Labnana (Marswave) image generation API: one node covers text-to-image, image editing and 4K output, plus credit estimation, task history and subscription tools."
-version = "2.0.1"
+version = "2.0.2"
 license = { file = "LICENSE" }
 authors = [{ name = "exoticknight" }]
 readme = "README.md"
@@ -17,6 +17,7 @@ Documentation = "https://labnana.com/docs/openapi/guide"
 [tool.comfy]
 DisplayName = "ComfyUI Labnana"
 PublisherId = "exoticknight"
+Icon = "https://raw.githubusercontent.com/exoticknight/ComfyUI-Labnana/main/assets/icon.png"
 
 [tool.ruff.lint]
 # N999: the repo/module name "ComfyUI-Labnana" follows the ComfyUI custom-node
