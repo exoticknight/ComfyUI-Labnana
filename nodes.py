@@ -13,6 +13,7 @@ import json
 from .labnana_api import (
     API_KEY_ENV,
     ASPECT_RATIOS,
+    CUSTOM_BASE_URL_ENV,
     DEFAULT_BASE_URL,
     IMAGE_SIZES,
     MODEL_NAMES,
@@ -43,8 +44,13 @@ def _generation_inputs(extra_required=None, extra_optional=None):
         "model": (MODEL_NAMES, {"default": MODEL_NAMES[0]}),
         "image_size": (IMAGE_SIZES, {
             "default": "2K",
-            "tooltip": "4K unsupported on wan2.7-image / seedream-5-0-pro."}),
-        "aspect_ratio": (ASPECT_RATIOS, {"default": "1:1"}),
+            "tooltip": "4K is unsupported on wan2.7-image / "
+                       "seedream-5-0-pro and on reference-guided "
+                       "wan2.7-image-pro requests."}),
+        "aspect_ratio": (ASPECT_RATIOS, {
+            "default": "1:1",
+            "tooltip": "Supported ratios depend on the selected model; "
+                       "invalid combinations fail locally."}),
     }
     required.update(extra_required or {})
     optional = {
@@ -81,7 +87,10 @@ class LabnanaClientNode:
                                "Create keys at https://labnana.com/api-keys"}),
             },
             "optional": {
-                "base_url": ("STRING", {"default": DEFAULT_BASE_URL}),
+                "base_url": ("STRING", {
+                    "default": DEFAULT_BASE_URL,
+                    "tooltip": "Official API endpoint. Custom URLs are blocked "
+                               f"unless {CUSTOM_BASE_URL_ENV}=1 is set."}),
                 "timeout": ("INT", {"default": 300, "min": 10, "max": 3600,
                                     "tooltip": "Per-request timeout (seconds)."}),
                 "max_retries": ("INT", {"default": 3, "min": 0, "max": 10,
@@ -110,9 +119,11 @@ class LabnanaSubscriptionNode:
     def INPUT_TYPES(cls):
         return {"required": {"client": ("LABNANA_CLIENT",)}}
 
-    RETURN_TYPES = ("INT", "INT", "INT", "BOOLEAN", "STRING")
+    RETURN_TYPES = ("INT", "INT", "INT", "BOOLEAN", "STRING", "INT",
+                    "STRING")
     RETURN_NAMES = ("total_credits", "monthly_credits", "permanent_credits",
-                    "paid_status", "info_json")
+                    "paid_status", "info_json", "limited_time_credits",
+                    "free_usages_json")
     FUNCTION = "query"
     CATEGORY = f"{CATEGORY_ROOT}/Account"
     OUTPUT_NODE = True
@@ -132,6 +143,8 @@ class LabnanaSubscriptionNode:
             int(data.get("usageAvailablePermanentCredits", 0)),
             bool(data.get("paidStatus", False)),
             info,
+            int(data.get("usageAvailableLimitedTimeCredits", 0)),
+            _pretty(data.get("freeUsages") or {}),
         )
 
 

@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/exoticknight/ComfyUI-Labnana)](https://github.com/exoticknight/ComfyUI-Labnana/releases)
 [![Comfy Registry](https://img.shields.io/badge/Comfy_Registry-comfyui--labnana-1a56db)](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana)
 [![License](https://img.shields.io/github/license/exoticknight/ComfyUI-Labnana)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 中文文档 | [English](README.md)
 
@@ -37,6 +37,8 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 1. 填入 **Labnana API Client** 节点的 `api_key` 字段;
 2. 设置环境变量 `LABNANA_API_KEY`(字段留空时自动读取,推荐,避免 Key 随工作流文件泄露)。
 
+为避免工作流把环境变量中的 Key 转发到其他主机,自定义 API 地址默认会被拒绝。使用可信代理或测试服务的开发者,需在启动 ComfyUI 前显式设置 `LABNANA_ALLOW_CUSTOM_BASE_URL=1`。
+
 ## 快速上手:文生图
 
 `Labnana API Client` → `Labnana Image Generation` → `Save Image`。写好 prompt,选 `model`、`image_size`、`aspect_ratio`,点 Run,其余节点内部自动处理。
@@ -49,20 +51,22 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 
 把 `Load Image` 接到 `reference_images`,prompt 里写编辑指令即可。参考图有两种来源,可混用,总数受模型上限(4–14)约束:
 
-- `reference_images`(IMAGE 输入):ComfyUI 图像批次,自动编码为 base64 内联上传(过大自动缩到 3072px 内 / 转 JPEG,规避 20MB 请求体上限);
+- `reference_images`(IMAGE 输入):ComfyUI 图像批次,自动编码为 base64 内联上传(按整个请求共享的 20MB 预算自适应压缩/缩小);
 - `reference_image_urls`(文本):每行一个 `https://` 或 `gs://` URL。
 
 **风格预设**:所有生成类节点都有可选的 `system_prompt` 输入,发送时拼接在 prompt 前(API 无原生 system prompt 字段),方便在多个工作流间复用同一段风格/行为约束。
 
 ## 4K 与慢任务
 
-不需要任何特殊接法——`image_size` 选 `4K` 就行。默认最多等 10 分钟,更慢的任务调大节点的可选 `timeout` 输入即可。
+不需要任何特殊接法——`image_size` 选 `4K` 就行。`wan2.7-image-pro` 仅文生图支持 4K,带参考图时必须使用 1K 或 2K。默认最多等 10 分钟,更慢的任务调大节点的可选 `timeout` 输入即可。
 
 ## 成本控制
 
 - **Labnana Estimate Credits**:输入与生图节点一致,返回 `credits` 与 `can_generate`——生成前先看价格;
-- **Labnana Subscription Info**:查询额度余额与订阅状态;
+- **Labnana Subscription Info**:查询月度、永久、限时积分、免费次数余额与订阅状态;
 - 不合法组合(如 wan2.7-image 选 4K、参考图超上限)会在发请求前直接报错,不浪费额度。
+
+账户存在匹配的 `freeUsages` 时,1K/2K 生成会优先消耗账户共享的免费次数而不是积分。免费次数不覆盖 4K;纯免费账户在高峰期还可能收到可重试的忙时错误。
 
 ## 模型与限制
 
@@ -71,11 +75,15 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 | gemini-3-pro-image | google | 1K/2K/4K | 14 | 15/15/30 |
 | gemini-3.1-flash-image | google | 1K/2K/4K | 14 | 10/10/20 |
 | gpt-image-2 | openai | 1K/2K/4K | 4 | 4/6/10 |
-| wan2.7-image-pro | alibaba | 1K/2K/4K | 9 | 6/8/12 |
+| wan2.7-image-pro | alibaba | 1K/2K/4K(4K 仅文生图) | 9 | 6/8/12 |
 | wan2.7-image | alibaba | 1K/2K | 9 | 4/6 |
 | seedream-5-0-pro | bytedance | 1K/2K | 10 | 6/15 |
 
-宽高比:`1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1`。
+宽高比按模型区分:
+
+- Wan2.7:`1:1, 3:4, 4:3, 9:16, 16:9`;
+- Gemini 3 Pro Image 与 GPT-Image-2:截至 `21:9` 的 8 种通用比例;
+- Gemini 3.1 Flash Image 与 Seedream 5.0 Pro:全部 12 种比例,包括 `1:4, 4:1, 1:8, 8:1`。
 
 额度价格以[官方文档](https://docs.marswave.ai/openapi-labnana.html)为准,可能调整——**Estimate Credits** 节点返回的永远是实时价格。
 
@@ -113,10 +121,12 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 
 ## 开发
 
-离线测试(无需 API Key 和网络,需要 torch/Pillow/numpy):
+先安装开发依赖,再运行离线检查(无需 API Key,也不会调用网络):
 
 ```
+python -m pip install -r requirements-dev.txt
 python tests/test_offline.py
+python -m ruff check .
 ```
 
 <details>

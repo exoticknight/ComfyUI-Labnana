@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/exoticknight/ComfyUI-Labnana)](https://github.com/exoticknight/ComfyUI-Labnana/releases)
 [![Comfy Registry](https://img.shields.io/badge/Comfy_Registry-comfyui--labnana-1a56db)](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana)
 [![License](https://img.shields.io/github/license/exoticknight/ComfyUI-Labnana)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 [中文文档](README.zh-CN.md) | English
 
@@ -37,6 +37,11 @@ Create a key (starts with `ls_`) at <https://labnana.com/api-keys>, then either:
 1. paste it into the `api_key` field of the **Labnana API Client** node, or
 2. set the `LABNANA_API_KEY` environment variable and leave the field empty — recommended, so the key never leaks into shared workflow JSON files.
 
+For safety, workflow-controlled custom API endpoints are blocked by default so
+an environment-provided key cannot be forwarded to another host. Developers
+using a trusted proxy or staging service can explicitly opt in by setting
+`LABNANA_ALLOW_CUSTOM_BASE_URL=1` before starting ComfyUI.
+
 ## Quick start: text to image
 
 `Labnana API Client` → `Labnana Image Generation` → `Save Image`. Type a prompt, pick a `model`, `image_size` and `aspect_ratio`, press Run. The node handles everything else internally.
@@ -49,20 +54,24 @@ Create a key (starts with `ls_`) at <https://labnana.com/api-keys>, then either:
 
 Connect a `Load Image` node to `reference_images` and write the editing instructions in the prompt. Reference images can come from two inputs, freely combined, subject to the per-model cap (4–14):
 
-- `reference_images` (IMAGE): a ComfyUI image batch, uploaded inline as base64 (auto-downscaled to ≤3072 px / JPEG fallback to stay under the 20 MB body limit);
+- `reference_images` (IMAGE): a ComfyUI image batch, uploaded inline as base64 (adaptively compressed/downscaled under a shared 20 MB request-body budget);
 - `reference_image_urls` (STRING): one `https://` or `gs://` URL per line.
 
 **Style presets**: every generation node accepts an optional `system_prompt`, prepended to the prompt (the API has no native system-prompt field) — handy for sharing one style/behavior preamble across workflows.
 
 ## 4K and slow jobs
 
-Nothing special to wire — pick `4K` as the image size. If a job needs longer than the default 10-minute wait, raise the node's optional `timeout` input.
+Nothing special to wire — pick `4K` as the image size. `wan2.7-image-pro` supports 4K for text-to-image only; reference-guided requests must use 1K or 2K. If a job needs longer than the default 10-minute wait, raise the node's optional `timeout` input.
 
 ## Controlling costs
 
 - **Labnana Estimate Credits** takes the same inputs as the generation node and returns `credits` and `can_generate` — check the price before spending.
-- **Labnana Subscription Info** shows your credit balances and plan status.
+- **Labnana Subscription Info** shows monthly, permanent and limited-time credit balances, free-usage balances and plan status.
 - Invalid combinations (e.g. 4K on wan2.7-image, too many reference images) fail fast locally before any credits are spent.
+
+When the account has matching `freeUsages`, 1K/2K generation consumes that
+shared account-level allowance before credits. Free usage does not cover 4K;
+pure-free accounts may also receive retryable busy responses at peak times.
 
 ## Models and constraints
 
@@ -71,11 +80,15 @@ Nothing special to wire — pick `4K` as the image size. If a job needs longer t
 | gemini-3-pro-image | google | 1K/2K/4K | 14 | 15/15/30 |
 | gemini-3.1-flash-image | google | 1K/2K/4K | 14 | 10/10/20 |
 | gpt-image-2 | openai | 1K/2K/4K | 4 | 4/6/10 |
-| wan2.7-image-pro | alibaba | 1K/2K/4K | 9 | 6/8/12 |
+| wan2.7-image-pro | alibaba | 1K/2K/4K (4K text-to-image only) | 9 | 6/8/12 |
 | wan2.7-image | alibaba | 1K/2K | 9 | 4/6 |
 | seedream-5-0-pro | bytedance | 1K/2K | 10 | 6/15 |
 
-Aspect ratios: `1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1`.
+Aspect ratios depend on the model:
+
+- Wan2.7: `1:1, 3:4, 4:3, 9:16, 16:9`;
+- Gemini 3 Pro Image and GPT-Image-2: the eight common ratios through `21:9`;
+- Gemini 3.1 Flash Image and Seedream 5.0 Pro: all 12 ratios, including `1:4, 4:1, 1:8, 8:1`.
 
 Credit prices follow the [official docs](https://docs.marswave.ai/openapi-labnana.html) and may change — the **Estimate Credits** node always returns the live cost.
 
@@ -113,10 +126,13 @@ All API errors are raised with the error code and a remediation hint, visible in
 
 ## Development
 
-Offline tests (no API key or network needed, requires torch/Pillow/numpy):
+Install the development dependencies, then run the offline checks (no API key
+or network calls are needed):
 
 ```
+python -m pip install -r requirements-dev.txt
 python tests/test_offline.py
+python -m ruff check .
 ```
 
 <details>

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.3 - 2026-08-22
+
+- Enforced every model's documented aspect-ratio constraints and rejected
+  reference-guided 4K requests for `wan2.7-image-pro` before submission.
+- Enforced the 20 MB request-body limit across all inline reference images,
+  with adaptive JPEG compression and resizing when necessary.
+- Protected environment-provided API keys from workflow-controlled custom API
+  endpoints; trusted custom endpoints now require
+  `LABNANA_ALLOW_CUSTOM_BASE_URL=1`.
+- Exposed limited-time credits and free-usage balances on the subscription node.
+- Updated the Python baseline to 3.10, refreshed Requests and GitHub Actions,
+  added a two-version CI matrix and documented development dependencies.
+
 ## 2.0.2 - 2026-08-11
 
 - Added the Labnana logo as the Comfy Registry icon (`assets/icon.png`).

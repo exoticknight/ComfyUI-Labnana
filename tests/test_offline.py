@@ -6,6 +6,7 @@ No network access or API key required. Run: python tests/test_offline.py
 import base64
 import importlib
 import io
+import json
 import os
 import sys
 from pathlib import Path
@@ -40,6 +41,36 @@ def test_node_schemas():
     print("OK  system_prompt input present on generation nodes")
 
 
+def test_subscription_outputs():
+    class FakeClient:
+        @staticmethod
+        def get_subscription():
+            return {
+                "totalAvailableCredits": 12,
+                "usageAvailableMonthlyCredits": 5,
+                "usageAvailablePermanentCredits": 4,
+                "usageAvailableLimitedTimeCredits": 3,
+                "paidStatus": True,
+                "freeUsages": {
+                    "image:test:generation": {"remaining": 2},
+                },
+            }
+
+    cls = pkg.NODE_CLASS_MAPPINGS["LabnanaSubscription"]
+    assert cls.RETURN_NAMES[:5] == (
+        "total_credits", "monthly_credits", "permanent_credits",
+        "paid_status", "info_json",
+    )
+    assert cls.RETURN_NAMES[5:] == (
+        "limited_time_credits", "free_usages_json",
+    )
+    result = cls().query(FakeClient())
+    assert result[:4] == (12, 5, 4, True)
+    assert result[5] == 3
+    assert json.loads(result[6])["image:test:generation"]["remaining"] == 2
+    print("OK  subscription exposes limited-time credits + free usage")
+
+
 def test_payload_building():
     img = torch.rand(2, 64, 64, 3)
     p = imaging.build_payload("gemini-3-pro-image", "a cat", "2K", "16:9",
@@ -61,19 +92,40 @@ def test_payload_building():
 
 
 def test_validation():
-    for bad in [("wan2.7-image", "4K", 0), ("seedream-5-0-pro", "4K", 0),
-                ("gpt-image-2", "2K", 5)]:
+    for bad in [("wan2.7-image", "4K", "1:1", 0),
+                ("seedream-5-0-pro", "4K", "1:1", 0),
+                ("gpt-image-2", "2K", "1:1", 5),
+                ("wan2.7-image", "2K", "2:3", 0),
+                ("gemini-3-pro-image", "2K", "1:4", 0),
+                ("wan2.7-image-pro", "4K", "1:1", 1)]:
         try:
             models.validate_request(*bad)
             raise AssertionError(f"should have rejected {bad}")
         except ValueError:
             pass
+    models.validate_request("gemini-3.1-flash-image", "4K", "1:8", 0)
+    models.validate_request("seedream-5-0-pro", "2K", "4:1", 1)
     try:
         imaging.build_payload("gpt-image-2", "  ", "1K", "1:1")
         raise AssertionError("empty prompt accepted")
     except ValueError:
         pass
     print("OK  constraint validation")
+
+
+def test_inline_request_budget():
+    import json
+
+    torch.manual_seed(0)
+    images = torch.rand(6, 1024, 1024, 3)
+    payload = imaging.build_payload(
+        "gemini-3-pro-image", "combine these references", "2K", "1:1",
+        reference_images=images,
+    )
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    assert len(payload["referenceImages"]) == 6
+    assert len(body) <= 20 * 1024 * 1024, len(body)
+    print("OK  inline reference images stay within request budget")
 
 
 def test_sync_response_parsing():
@@ -142,6 +194,7 @@ def test_example_workflows():
 
 def test_client():
     saved = os.environ.pop("LABNANA_API_KEY", None)
+    saved_custom_url = os.environ.pop("LABNANA_ALLOW_CUSTOM_BASE_URL", None)
     try:
         try:
             client_mod.LabnanaClient(api_key="")
@@ -150,16 +203,40 @@ def test_client():
             assert "labnana.com/api-keys" in str(e)
         c = client_mod.LabnanaClient(api_key="ls_test")
         assert c._session.headers["Authorization"] == "Bearer ls_test"
+        assert c._session.headers["User-Agent"] == (
+            f"ComfyUI-Labnana/{client_mod.CLIENT_VERSION}"
+        )
+        version_line = next(
+            line for line in (ROOT / "pyproject.toml").read_text().splitlines()
+            if line.startswith("version = ")
+        )
+        assert client_mod.CLIENT_VERSION == version_line.split('"')[1]
+        try:
+            client_mod.LabnanaClient(
+                api_key="ls_test", base_url="https://example.com")
+            raise AssertionError("unapproved custom base URL accepted")
+        except client_mod.LabnanaError as e:
+            assert "LABNANA_ALLOW_CUSTOM_BASE_URL" in str(e)
+        os.environ["LABNANA_ALLOW_CUSTOM_BASE_URL"] = "1"
+        custom = client_mod.LabnanaClient(
+            api_key="ls_test", base_url="https://staging.example.com/")
+        assert custom.base_url == "https://staging.example.com"
     finally:
         if saved is not None:
             os.environ["LABNANA_API_KEY"] = saved
+        if saved_custom_url is None:
+            os.environ.pop("LABNANA_ALLOW_CUSTOM_BASE_URL", None)
+        else:
+            os.environ["LABNANA_ALLOW_CUSTOM_BASE_URL"] = saved_custom_url
     print("OK  client auth + missing-key error")
 
 
 if __name__ == "__main__":
     test_node_schemas()
+    test_subscription_outputs()
     test_payload_building()
     test_validation()
+    test_inline_request_budget()
     test_sync_response_parsing()
     test_example_workflows()
     test_client()
