@@ -1,5 +1,9 @@
 # ComfyUI-Labnana
 
+<p align="center">
+  <img src="assets/icon.png" alt="ComfyUI-Labnana Logo" width="160">
+</p>
+
 [![CI](https://github.com/exoticknight/ComfyUI-Labnana/actions/workflows/ci.yml/badge.svg)](https://github.com/exoticknight/ComfyUI-Labnana/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/exoticknight/ComfyUI-Labnana)](https://github.com/exoticknight/ComfyUI-Labnana/releases)
 [![Comfy Registry](https://img.shields.io/badge/Comfy_Registry-comfyui--labnana-1a56db)](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana)
