@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.4 - 2026-08-22
+
+- Replaced the low-resolution Registry icon with a crisp 400 px transparent
+  project mark combining Labnana's flask with Comfy's node-flow visual language.
+
 ## 2.0.3 - 2026-08-22
 
 - Enforced every model's documented aspect-ratio constraints and rejected

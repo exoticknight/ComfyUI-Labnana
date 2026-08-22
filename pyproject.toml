@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-labnana"
 description = "ComfyUI custom nodes for the Labnana (Marswave) image generation API: one node covers text-to-image, image editing and 4K output, plus credit estimation, task history and subscription tools."
-version = "2.0.3"
+version = "2.0.4"
 license = { file = "LICENSE" }
 authors = [{ name = "exoticknight" }]
 readme = "README.md"
