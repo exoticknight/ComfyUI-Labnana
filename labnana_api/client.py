@@ -7,12 +7,38 @@ and exposes one method per endpoint.
 
 import os
 import random
+import re
 import time
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
+from urllib.parse import urlsplit
 
 import requests
 
 DEFAULT_BASE_URL = "https://api.labnana.com"
 API_KEY_ENV = "LABNANA_API_KEY"
+CUSTOM_BASE_URL_ENV = "LABNANA_ALLOW_CUSTOM_BASE_URL"
+
+
+def _package_version():
+    try:
+        return version("comfyui-labnana")
+    except PackageNotFoundError:
+        try:
+            pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+            match = re.search(
+                r'^version\s*=\s*"([^"]+)"',
+                pyproject.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            if match:
+                return match.group(1)
+        except OSError:
+            pass
+    return "unknown"
+
+
+CLIENT_VERSION = _package_version()
 
 # Documented error codes -> remediation hints appended to error messages.
 ERROR_HINTS = {
@@ -47,15 +73,39 @@ class LabnanaClient:
                 f"Client node or set the {API_KEY_ENV} environment variable. "
                 "Keys are created at https://labnana.com/api-keys"
             )
+        base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
+        parsed = urlsplit(base_url)
+        if (parsed.scheme not in ("http", "https") or not parsed.hostname
+                or parsed.username or parsed.password or parsed.query
+                or parsed.fragment):
+            raise LabnanaError(
+                "base_url must be an http(s) URL without credentials, query, "
+                "or fragment"
+            )
+        official_url = (
+            parsed.scheme == "https"
+            and parsed.hostname.lower() == "api.labnana.com"
+            and parsed.port in (None, 443)
+            and parsed.path in ("", "/")
+        )
+        allow_custom = os.environ.get(CUSTOM_BASE_URL_ENV, "").lower() in {
+            "1", "true", "yes", "on",
+        }
+        if not official_url and not allow_custom:
+            raise LabnanaError(
+                f"Refusing to send the API key to custom base URL '{base_url}'. "
+                f"Set {CUSTOM_BASE_URL_ENV}=1 only when you intentionally use "
+                "a trusted proxy or staging server."
+            )
         self.api_key = api_key
-        self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
+        self.base_url = base_url
         self.timeout = timeout
         self.max_retries = max_retries
         self._session = requests.Session()
         self._session.headers.update({
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "ComfyUI-Labnana/1.0",
+            "User-Agent": f"ComfyUI-Labnana/{CLIENT_VERSION}",
         })
 
     # ------------------------------------------------------------------ core

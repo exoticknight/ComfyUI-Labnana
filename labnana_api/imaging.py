@@ -4,6 +4,7 @@ request/response formats, plus the shared request-payload builder."""
 import base64
 import io
 import json
+import math
 
 import numpy as np
 import torch
@@ -11,8 +12,11 @@ from PIL import Image
 
 from .models import MODELS, validate_request
 
-# Request bodies are capped at 20 MB; keep inline reference images under a
-# conservative per-image budget so multi-image requests still fit.
+# Request bodies are capped at 20 MB. Reserve space for JSON structure, URLs,
+# and prompts, then share the remaining encoded-data budget across all inline
+# images in the request.
+_MAX_REQUEST_BYTES = 20 * 1024 * 1024
+_INLINE_TOTAL_BUDGET_BYTES = 18 * 1024 * 1024
 _INLINE_BUDGET_BYTES = 6 * 1024 * 1024
 _MAX_INLINE_SIDE = 3072
 
@@ -29,25 +33,51 @@ def tensor_batch_to_pils(images: torch.Tensor):
     return pils
 
 
-def pil_to_inline_data(img: Image.Image) -> dict:
+def pil_to_inline_data(img: Image.Image,
+                       max_encoded_bytes: int = _INLINE_BUDGET_BYTES) -> dict:
     """PIL image -> referenceImages inlineData entry (base64 PNG/JPEG)."""
+    if max_encoded_bytes <= 0:
+        raise ValueError("No request-body budget remains for reference images")
     if img.mode not in ("RGB", "RGBA"):
         img = img.convert("RGB")
     if max(img.size) > _MAX_INLINE_SIDE:
         img = img.copy()
         img.thumbnail((_MAX_INLINE_SIDE, _MAX_INLINE_SIDE), Image.LANCZOS)
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    mime = "image/png"
-    if buf.tell() > _INLINE_BUDGET_BYTES:
+    def encode(candidate, image_format, **save_kwargs):
         buf = io.BytesIO()
-        img.convert("RGB").save(buf, format="JPEG", quality=92)
-        mime = "image/jpeg"
+        candidate.save(buf, format=image_format, **save_kwargs)
+        return base64.b64encode(buf.getvalue()).decode("ascii")
+
+    encoded = encode(img, "PNG")
+    mime = "image/png"
+    if len(encoded) > max_encoded_bytes:
+        candidate = img.convert("RGB")
+        while True:
+            for quality in (92, 82, 72, 60, 48):
+                encoded = encode(candidate, "JPEG", quality=quality,
+                                 optimize=True)
+                if len(encoded) <= max_encoded_bytes:
+                    mime = "image/jpeg"
+                    break
+            else:
+                scale = math.sqrt(max_encoded_bytes / len(encoded)) * 0.9
+                new_size = (
+                    max(64, int(candidate.width * scale)),
+                    max(64, int(candidate.height * scale)),
+                )
+                if new_size == candidate.size:
+                    raise ValueError(
+                        "Reference image cannot fit within the 20 MB request "
+                        "body limit"
+                    )
+                candidate = candidate.resize(new_size, Image.LANCZOS)
+                continue
+            break
     return {
         "inlineData": {
             "mimeType": mime,
-            "data": base64.b64encode(buf.getvalue()).decode("ascii"),
+            "data": encoded,
         }
     }
 
@@ -104,10 +134,16 @@ def build_payload(model: str, prompt: str, image_size: str, aspect_ratio: str,
     for url in (reference_image_urls or "").replace(",", "\n").splitlines():
         if url.strip():
             refs.append(url_to_file_data(url))
-    for pil in tensor_batch_to_pils(reference_images):
-        refs.append(pil_to_inline_data(pil))
+    pils = tensor_batch_to_pils(reference_images)
+    remaining_budget = _INLINE_TOTAL_BUDGET_BYTES
+    for index, pil in enumerate(pils):
+        remaining_images = len(pils) - index
+        image_budget = remaining_budget // remaining_images
+        inline = pil_to_inline_data(pil, max_encoded_bytes=image_budget)
+        remaining_budget -= len(inline["inlineData"]["data"])
+        refs.append(inline)
 
-    validate_request(model, image_size, len(refs))
+    validate_request(model, image_size, aspect_ratio, len(refs))
 
     payload = {
         "provider": MODELS[model]["provider"],
@@ -120,6 +156,13 @@ def build_payload(model: str, prompt: str, image_size: str, aspect_ratio: str,
     }
     if refs:
         payload["referenceImages"] = refs
+    body_size = len(json.dumps(payload).encode("utf-8"))
+    if body_size > _MAX_REQUEST_BYTES:
+        raise ValueError(
+            f"Generation request is {body_size / 1024 / 1024:.1f} MB; "
+            "the Labnana API limit is 20 MB. Shorten the prompt/URLs or "
+            "reduce the number of reference images."
+        )
     return payload
 
 

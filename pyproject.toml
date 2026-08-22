@@ -1,12 +1,12 @@
 [project]
 name = "comfyui-labnana"
 description = "ComfyUI custom nodes for the Labnana (Marswave) image generation API: one node covers text-to-image, image editing and 4K output, plus credit estimation, task history and subscription tools."
-version = "2.0.2"
+version = "2.0.3"
 license = { file = "LICENSE" }
 authors = [{ name = "exoticknight" }]
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = ["requests>=2.25.0"]
+requires-python = ">=3.10"
+dependencies = ["requests>=2.32.4,<3"]
 classifiers = ["License :: OSI Approved :: Apache Software License"]
 
 [project.urls]
