@@ -157,3 +157,10 @@ The synchronous endpoint (`POST /openapi/v1/images/generation`) is implemented i
 ## License
 
 [Apache-2.0](LICENSE)
+
+
+## Community
+
+- [LINUX DO](https://linux.do/)
+- [Comfy Registry](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana)
+- [GitHub Issues](https://github.com/exoticknight/ComfyUI-Labnana/issues)
