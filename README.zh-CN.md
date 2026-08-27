@@ -151,3 +151,10 @@ python -m ruff check .
 ## License
 
 [Apache-2.0](LICENSE)
+
+
+## 社区
+
+- [LINUX DO](https://linux.do/)
+- [Comfy Registry](https://registry.comfy.org/publishers/exoticknight/nodes/comfyui-labnana)
+- [GitHub Issues](https://github.com/exoticknight/ComfyUI-Labnana/issues)
