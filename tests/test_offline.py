@@ -38,6 +38,9 @@ def test_node_schemas():
     for key in ("LabnanaImageGeneration",
                 "LabnanaEstimateCredits", "LabnanaSubmitTask"):
         assert "system_prompt" in mappings[key].INPUT_TYPES()["optional"], key
+    model_choices = mappings["LabnanaImageGeneration"].INPUT_TYPES()["required"]["model"][0]
+    assert "gpt-image-2.5-flare" in model_choices
+    assert "gpt-image-2.5-sunburst" in model_choices
     print("OK  system_prompt input present on generation nodes")
 
 
@@ -88,6 +91,10 @@ def test_payload_building():
     p3 = imaging.build_payload("gpt-image-2", "", "1K", "1:1",
                                system_prompt="only system")
     assert p3["prompt"] == "only system"
+    for model in ("gpt-image-2.5-flare", "gpt-image-2.5-sunburst"):
+        payload = imaging.build_payload(model, "a cat", "4K", "4:5")
+        assert payload["provider"] == "openai"
+        assert payload["model"] == model
     print("OK  payload building + system prompt")
 
 
@@ -95,6 +102,8 @@ def test_validation():
     for bad in [("wan2.7-image", "4K", "1:1", 0),
                 ("seedream-5-0-pro", "4K", "1:1", 0),
                 ("gpt-image-2", "2K", "1:1", 5),
+                ("gpt-image-2.5-flare", "2K", "1:1", 5),
+                ("gpt-image-2.5-sunburst", "2K", "1:4", 0),
                 ("wan2.7-image", "2K", "2:3", 0),
                 ("gemini-3-pro-image", "2K", "1:4", 0),
                 ("wan2.7-image-pro", "4K", "1:1", 1)]:
@@ -105,6 +114,10 @@ def test_validation():
             pass
     models.validate_request("gemini-3.1-flash-image", "4K", "1:8", 0)
     models.validate_request("seedream-5-0-pro", "2K", "4:1", 1)
+    models.validate_request("gemini-3.1-flash-image", "4K", "4:1", 0)
+    models.validate_request("gpt-image-2.5-flare", "4K", "4:5", 0)
+    models.validate_request("gpt-image-2.5-sunburst", "2K", "5:4", 4)
+    models.validate_request("gpt-image-2.5-sunburst", "4K", "21:9", 4)
     try:
         imaging.build_payload("gpt-image-2", "  ", "1K", "1:1")
         raise AssertionError("empty prompt accepted")

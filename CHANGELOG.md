@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Added GPT-Image-2.5 Flare and Sunburst with model-aware size, aspect-ratio and
+  reference-image validation.
+- Added the 4:5 and 5:4 aspect choices needed by GPT-Image-2.5 while preserving
+  each model's documented constraints.
+- Added an opt-in live smoke test: free estimates by default, with `--generate`
+  submitting one 1K image per model.
+- Refreshed the English and Chinese model tables and usage notes.
+
 ## 2.0.4 - 2026-08-22
 
 - Replaced the low-resolution Registry icon with a crisp 400 px transparent
