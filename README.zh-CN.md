@@ -78,6 +78,8 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 | gemini-3-pro-image | google | 1K/2K/4K | 14 | 15/15/30 |
 | gemini-3.1-flash-image | google | 1K/2K/4K | 14 | 10/10/20 |
 | gpt-image-2 | openai | 1K/2K/4K | 4 | 4/6/10 |
+| gpt-image-2.5-flare | openai | 1K/2K/4K | 4 | 实时估价；与 Sunburst 同价 |
+| gpt-image-2.5-sunburst | openai | 1K/2K/4K | 4 | 实时估价；与 Flare 同价 |
 | wan2.7-image-pro | alibaba | 1K/2K/4K(4K 仅文生图) | 9 | 6/8/12 |
 | wan2.7-image | alibaba | 1K/2K | 9 | 4/6 |
 | seedream-5-0-pro | bytedance | 1K/2K | 10 | 6/15 |
@@ -86,7 +88,10 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 
 - Wan2.7:`1:1, 3:4, 4:3, 9:16, 16:9`;
 - Gemini 3 Pro Image 与 GPT-Image-2:截至 `21:9` 的 8 种通用比例;
+- GPT-Image-2.5 Flare 与 Sunburst:10 种比例,新增 `4:5` 和 `5:4`;
 - Gemini 3.1 Flash Image 与 Seedream 5.0 Pro:全部 12 种比例,包括 `1:4, 4:1, 1:8, 8:1`。
+
+GPT-Image-2.5 Flare 更快,Sunburst 细节更丰富;两档同价,具体积分由 **Estimate Credits** 节点按当前尺寸实时查询。
 
 额度价格以[官方文档](https://docs.marswave.ai/openapi-labnana.html)为准,可能调整——**Estimate Credits** 节点返回的永远是实时价格。
 
@@ -130,6 +135,13 @@ git clone https://github.com/exoticknight/ComfyUI-Labnana.git
 python -m pip install -r requirements-dev.txt
 python tests/test_offline.py
 python -m ruff check .
+```
+
+配置好本机 `LABNANA_API_KEY` 后,运行 `python tests/test_live_models.py` 免费查询新模型的 1K 估价。加 `--generate` 会在估价允许时各生成一张 1K 图片,并消耗相应积分:
+
+```
+python tests/test_live_models.py
+python tests/test_live_models.py --generate
 ```
 
 <details>

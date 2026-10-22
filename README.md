@@ -83,6 +83,8 @@ pure-free accounts may also receive retryable busy responses at peak times.
 | gemini-3-pro-image | google | 1K/2K/4K | 14 | 15/15/30 |
 | gemini-3.1-flash-image | google | 1K/2K/4K | 14 | 10/10/20 |
 | gpt-image-2 | openai | 1K/2K/4K | 4 | 4/6/10 |
+| gpt-image-2.5-flare | openai | 1K/2K/4K | 4 | Live estimate; same as Sunburst |
+| gpt-image-2.5-sunburst | openai | 1K/2K/4K | 4 | Live estimate; same as Flare |
 | wan2.7-image-pro | alibaba | 1K/2K/4K (4K text-to-image only) | 9 | 6/8/12 |
 | wan2.7-image | alibaba | 1K/2K | 9 | 4/6 |
 | seedream-5-0-pro | bytedance | 1K/2K | 10 | 6/15 |
@@ -91,7 +93,10 @@ Aspect ratios depend on the model:
 
 - Wan2.7: `1:1, 3:4, 4:3, 9:16, 16:9`;
 - Gemini 3 Pro Image and GPT-Image-2: the eight common ratios through `21:9`;
+- GPT-Image-2.5 Flare and Sunburst: 10 ratios, adding `4:5` and `5:4`;
 - Gemini 3.1 Flash Image and Seedream 5.0 Pro: all 12 ratios, including `1:4, 4:1, 1:8, 8:1`.
+
+GPT-Image-2.5 Flare favors speed; Sunburst favors richer detail. Both tiers cost the same, and the **Estimate Credits** node returns the current price for the selected size.
 
 Credit prices follow the [official docs](https://docs.marswave.ai/openapi-labnana.html) and may change — the **Estimate Credits** node always returns the live cost.
 
@@ -137,6 +142,10 @@ python -m pip install -r requirements-dev.txt
 python tests/test_offline.py
 python -m ruff check .
 ```
+
+With `LABNANA_API_KEY` configured locally, `python tests/test_live_models.py`
+requests free 1K estimates for both new models. Add `--generate` to generate one
+1K image per model when both estimates allow it; generation consumes credits.
 
 <details>
 <summary><b>Node → API endpoint mapping</b></summary>

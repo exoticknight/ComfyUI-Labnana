@@ -8,6 +8,8 @@ COMMON_ASPECT_RATIOS = [
     "1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9",
 ]
 
+GPT_IMAGE_25_ASPECT_RATIOS = COMMON_ASPECT_RATIOS + ["4:5", "5:4"]
+
 EXTREME_ASPECT_RATIOS = ["1:4", "4:1", "1:8", "8:1"]
 
 WAN_ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"]
@@ -37,6 +39,18 @@ MODELS = {
         "max_reference_images": 4,
         "credits": {"1K": 4, "2K": 6, "4K": 10},
     },
+    "gpt-image-2.5-flare": {
+        "provider": "openai",
+        "image_sizes": ["1K", "2K", "4K"],
+        "aspect_ratios": GPT_IMAGE_25_ASPECT_RATIOS,
+        "max_reference_images": 4,
+    },
+    "gpt-image-2.5-sunburst": {
+        "provider": "openai",
+        "image_sizes": ["1K", "2K", "4K"],
+        "aspect_ratios": GPT_IMAGE_25_ASPECT_RATIOS,
+        "max_reference_images": 4,
+    },
     "wan2.7-image-pro": {
         "provider": "alibaba",
         "image_sizes": ["1K", "2K", "4K"],
@@ -65,7 +79,7 @@ MODEL_NAMES = list(MODELS.keys())
 
 IMAGE_SIZES = ["1K", "2K", "4K"]
 
-ASPECT_RATIOS = COMMON_ASPECT_RATIOS + EXTREME_ASPECT_RATIOS
+ASPECT_RATIOS = COMMON_ASPECT_RATIOS + ["4:5", "5:4"] + EXTREME_ASPECT_RATIOS
 
 TASK_STATUSES = ["pending", "generating", "success", "fail"]
 
