@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.5 - 2026-10-22
 
 - Added GPT-Image-2.5 Flare and Sunburst with model-aware size, aspect-ratio and
   reference-image validation.
